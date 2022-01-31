@@ -500,7 +500,7 @@ void inicialization(int* parametrs) {
 	return;
 }
 //Расчёт награды
-int revard_calculate(int** field,int size,int player) {
+int revard_calculate(int** field,int size,int player, int *parametrs) {
 	int rev=0;	
 	int count_1 = 0;
 	for (int i = 0; i < size; i++) {
@@ -510,14 +510,14 @@ int revard_calculate(int** field,int size,int player) {
 		{
 			if (field[i][j] == player) { count_1++; }
 		}		
-		if (count_1 == 2) { rev = rev+1; }
+		if (count_1 == 2) { rev += parametrs[2]; }
 		count_1 = 0;
 		//Ловушка по горизонтальному столбцу
 		for (int j = 0; j < 3; j++)
 		{
 			if (field[j][i] == player) { count_1++; }
 		}
-		if (count_1 == 2) { rev = rev+2; }
+		if (count_1 == 2) { rev += parametrs[3]; }
 		count_1 = 0;				
 	}	
 	//Ловушка по диагонали
@@ -525,16 +525,16 @@ int revard_calculate(int** field,int size,int player) {
 	{
 		if (field[i][i] == player) { count_1++; }
 	}	
-	if (count_1 == 2) { rev++; }
+	if (count_1 == 2) { rev += parametrs[4]; }
 	count_1 = 0;
 	for (int i = 0; i < 3; i++)
 	{
 		if (field[i][2-i] == player) { count_1++; }
 	}
-	if (count_1 == 2) { rev++; }
+	if (count_1 == 2) { rev+= parametrs[4]; }
 	count_1 = 0;
 	//Ход в центр
-	if (field[1][1] == player){rev = rev+2;}
+	if (field[1][1] == player){rev += parametrs[5];}
 	return rev;
 }
 //Автоматический ход недопускающий победу в место вариативности
@@ -595,7 +595,7 @@ int Calculate_range_tree(Uzel* field) {
 }
 //-------------------Дерево-------------------
 //Рекурсивное дерево
-int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_level, int player, int deep, int revard) {
+int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_level, int player, int deep, int revard, int *parametrs) {
 	if ((deep == 0) || (deep > 9)) { return 0; }
 	if (current_level == 0) {
 		return revard;
@@ -628,8 +628,8 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 				cur_root->next[0] = Create_new_uzel();
 				cur_root->next[0]->level = current_level;
 				copy_arr(zap_field, cur_root->next[0]->data, size);
-				loc_revard = (revard_calculate(zap_field, size, player*pow(-1, current_level + 1)) - revard_calculate(zap_field, size, player*pow(-1, current_level)));
-				loc_revard = tree(zap_field, cur_root->next[0], size, count_wins, current_level + 1, player*(-1), deep - 1, loc_revard);
+				loc_revard = (revard_calculate(zap_field, size, player*pow(-1, current_level + 1),parametrs) - revard_calculate(zap_field, size, player*pow(-1, current_level),parametrs));
+				loc_revard = tree(zap_field, cur_root->next[0], size, count_wins, current_level + 1, player*(-1), deep - 1, loc_revard, parametrs);
 				_delete_(zap_field,size);	
 				return revard + loc_revard;
 			}
@@ -653,12 +653,12 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 			win1[i] = logic(arr[i], size, player*pow(-1, current_level + 1));
 			win2[i] = logic(arr[i], size, player*pow(-1, current_level));
 			if (win1[i]) {
-				arr_revard[i] = 10; // Награда дочернего элемента за победу								
+				arr_revard[i] = parametrs[0]; // Награда дочернего элемента за победу								
 				count_wins++;	
 				//print(arr[i],size);
 			}
 			if (win2[i]) {
-				arr_revard[i] = -2; // Награда дочернего элемента за проигрыш								
+				arr_revard[i] = parametrs[1]; // Награда дочернего элемента за проигрыш								
 				count_wins++;				
 				//print(arr[i], size);
 			}
@@ -666,8 +666,8 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 		//Проверка ветвей на победу					
 		for (int i = 0; i < count_zeros; i++) {
 			if ((win1[i] == false) && (win2[i] == false)) {		//Случай если победитель ещё не найден	
-				arr_revard[i] = (revard_calculate(arr[i], size, player*pow(-1, current_level + 1)) - revard_calculate(arr[i], size, player*pow(-1, current_level)));
-				arr_revard[i] = tree(arr[i], cur_root->next[i], size, count_wins, current_level + 1, player*(-1), deep - 1, arr_revard[i]);
+				arr_revard[i] = (revard_calculate(arr[i], size, player*pow(-1, current_level + 1), parametrs) - revard_calculate(arr[i], size, player*pow(-1, current_level), parametrs));
+				arr_revard[i] = tree(arr[i], cur_root->next[i], size, count_wins, current_level + 1, player*(-1), deep - 1, arr_revard[i], parametrs);
 			}
 		}		
 		
@@ -681,14 +681,14 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 	}
 }
 //Корень дерева
-int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_level, int player, int deep) {
+int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_level, int player, int deep, int *parametrs) {
 	if ((deep == 0) || (deep > 9)) { return 0; }
 	if (current_level == 0) {
 		//print(field, size);		
 		cur_root = Update_tree(cur_root);
 		cur_root = Create_new_uzel();
 		copy_arr(field, cur_root->data, size);
-		int res = tree(field, cur_root, size, count_wins, current_level + 1, player, deep);
+		int res = tree(field, cur_root, size, count_wins, current_level + 1, player, deep, parametrs);
 		cout << "Выход из корневого дерева: " << res << endl;
 		return res;
 	}
@@ -727,19 +727,19 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 			win1[i] = logic(arr[i], size, player*pow(-1, current_level + 1));
 			win2[i] = logic(arr[i], size, player*pow(-1, current_level));
 			if (win1[i]) {
-				arr_revard[i] = 10; // Награда дочернего элемента за победу								
+				arr_revard[i] = parametrs[0]; // Награда дочернего элемента за победу								
 				count_wins++;				
 			}
 			if (win2[i]) {
-				arr_revard[i] = -2; // Награда дочернего элемента за проигрыш								
+				arr_revard[i] = parametrs[1]; // Награда дочернего элемента за проигрыш								
 				count_wins++;				
 			}
 		}
 		//Проверка на необходимость продолжать дерево		
 		
 		for (int i = 0; i < count_zeros; i++) {			
-			arr_revard[i] = (revard_calculate(arr[i], size, player*pow(-1, current_level + 1)) - revard_calculate(arr[i], size, player*pow(-1, current_level)));
-			arr_revard[i] = tree(arr[i], cur_root->next[i], size, count_wins, current_level + 1, player*(-1), deep - 1, arr_revard[i]);			
+			arr_revard[i] = (revard_calculate(arr[i], size, player*pow(-1, current_level + 1), parametrs) - revard_calculate(arr[i], size, player*pow(-1, current_level), parametrs));
+			arr_revard[i] = tree(arr[i], cur_root->next[i], size, count_wins, current_level + 1, player*(-1), deep - 1, arr_revard[i], parametrs);
 		}
 		//Multiprocessing wrong
 		/*
@@ -777,8 +777,55 @@ int tree(int** field, Uzel *cur_root, int size, int &count_wins, int current_lev
 		return max_index;
 	}
 }
-
-
+//Рандомизатор параметров
+int* random() {
+	int *param = new int[6];
+	param[0] = rand() % 100;
+	param[1] = rand() % 100 - 30;
+	param[2] = rand() % 100;
+	param[3] = rand() % 100; 
+	param[4] = rand() % 100;
+	param[5] = rand() % 100;	
+	return param;
+}
+//Поиск более эффективаных параметров
+int find_more_effective_player(int** field, int size,int player){	
+	int count_1 = 0;
+	int rev = 0;
+	for (int i = 0; i < size; i++) {
+		count_1 = 0;
+		//Ловушка по вертикальному столбцу
+		for (int j = 0; j < 3; j++)
+		{
+			if (field[i][j] == player) { count_1++; }
+		}
+		if (count_1 == 2) { rev++; }
+		count_1 = 0;
+		//Ловушка по горизонтальному столбцу
+		for (int j = 0; j < 3; j++)
+		{
+			if (field[j][i] == player) { count_1++; }
+		}
+		if (count_1 == 2) { rev++; }
+		count_1 = 0;
+	}
+	//Ловушка по диагонали
+	for (int i = 0; i < 3; i++)
+	{
+		if (field[i][i] == player) { count_1++; }
+	}
+	if (count_1 == 2) { rev ++; }
+	count_1 = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (field[i][2 - i] == player) { count_1++; }
+	}
+	if (count_1 == 2) { rev++; }
+	count_1 = 0;
+	//Ход в центр
+	if (field[1][1] == player) { rev ++; }
+	return rev;
+}
 int main()
 {		
 	srand(static_cast<unsigned int>(time(0)));
@@ -789,8 +836,9 @@ int main()
 	int size = 3;
 	int win_0=0;
 	bool win = false, nichya = false;
-	int **a = inicialize_field(size);
-	int *parametrs = new int[6];
+	int **a = inicialize_field(size);	
+	//parametrs = {win, lose, trap_vert, trap_gorizont, trap_dia, central_step}
+	int parametrs[6] = {10, -2, 1, 1, 2, 2};
 	int  player = 1;
 	while (!win) {
 		char _if_;	
@@ -808,7 +856,7 @@ int main()
 				if ((win == false)&&(nichya==false)) {	
 					root = Update_tree(root);
 					root = Create_new_uzel();
-					int predict = tree(a, root, size, win_0, 0, player, 7); //Новое дерево
+					int predict = tree(a, root, size, win_0, 0, player, 7, parametrs); //Новое дерево
 					input_step(predict, a, size, player);
 					print(a,size);
 					win = logic(a, size, player);
@@ -824,9 +872,8 @@ int main()
 			int start_time = clock();
 			//cout << Calculate_range_tree(root) << endl;
 			//root = Update_tree(root);
-
 			//root = Create_new_uzel();
-			predict = tree(a, root, size,win_0,0, player, 7);	//новое дерево	
+			predict = tree(a, root, size,win_0,0, player, 3, parametrs);	//новое дерево	
 			//check_variation(root);
 			int end_time = clock();
 			int search_time = end_time - start_time;
@@ -834,27 +881,73 @@ int main()
 			cout << "Количество побед: " << win_0 << endl;
 			cout << "Время построения дерева:" << search_time << endl;
 			break; }
-		case '3': {			
-			if ((win == false) && (nichya == false)) {
-				player = 1;
-				cout << "Player: " << player << endl;
-				int predict = tree(a, root, size, win_0, 0, player, 5);
-				input_step(predict, a, size, player);
-				print(a, size);
-				win = logic(a, size, player);
-				nichya = logic(a, size);
-				player *= (-1);				
+		case '3': {		
+			int * param1 = random();
+			int * param2 = random();
+			int winer = 0;
+			cout << "Параметры первого:" << endl;
+			cout << "{win, lose, trap_vert, trap_gorizont, trap_dia, central_step}" << endl;
+			print(param1, 6);
+			cout << "Параметры второго:" << endl;
+			cout << "{win, lose, trap_vert, trap_gorizont, trap_dia, central_step}" << endl;
+			print(param2,6);
+			bool flag = true;
+			while (flag)
+			{
 				if ((win == false) && (nichya == false)) {
+					player = 1;
 					cout << "Player: " << player << endl;
-					int predict1 = tree(a, root1, size, win_0, 0, player, 5);
-					input_step(predict1, a, size, player);
+					int predict = tree(a, root, size, win_0, 0, player, 5, param1);
+					input_step(predict, a, size, player);
 					print(a, size);
-					win = logic(a, size, player);	
+					win = logic(a, size, player);
 					nichya = logic(a, size);
+					player *= (-1);
+					if ((win == false) && (nichya == false)) {
+						cout << "Player: " << player << endl;
+						int predict1 = tree(a, root1, size, win_0, 0, player, 5, param2);
+						input_step(predict1, a, size, player);
+						print(a, size);
+						win = logic(a, size, player);
+						nichya = logic(a, size);
+					}
 				}
+				if (win == true) { 
+					cout << "Game Over!" << endl; 
+					flag = false; 
+					if (logic(a, size, 1)) 
+					{ 
+						winer = 1; 
+						cout << "Победил первый" << endl; 
+					} 
+					else 
+					{ 
+						winer = -1;
+						cout << "Победил второй" << endl; 
+					} 
+				}
+				if (nichya == true) { 
+					cout << "Nichya!" << endl; 
+					flag = false; 
+					if (find_more_effective_player(a, size, 1) - find_more_effective_player(a, size, -1) > 0) 
+					{ 
+						winer = 1;
+						cout << "Победил первый" << endl; 
+					} 
+					else 
+					{ 
+						winer = -1; 
+						cout << "Победил второй" << endl;
+					} 
+				}
+				
 			}
-			if (win == true) { cout << "Game Over!" << endl; }
-			if (nichya == true) { cout << "Nichya!" << endl; }			
+			if (winer = 1) {
+				param2 = random();
+			}
+			else {
+				param1 = random();
+			}
 			break;
 		}
 		case '4': _delete_(a, size); return 0;
